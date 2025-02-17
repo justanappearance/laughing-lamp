@@ -12,9 +12,32 @@
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
-        <a class="navbar-brand" href="#">Vocaloid Playlist Creator</a>
+        <a class="navbar-brand" href="{{ url_for('index') }}"
+          >Vocaloid Playlist Creator</a
+        >
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('review') }}"
+                >Review Songs</a
+              >
+            </li>
+          </ul>
+        </div>
       </div>
     </nav>
+
     <div class="container my-5">
       {% with messages = get_flashed_messages(with_categories=True) %} {% if
       messages %} {% for category, message in messages %}
@@ -57,42 +80,35 @@
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.0.1"></script>
-    <script>
-      // function launchConfetti() {
-      //   var duration = 3 * 1000;
-      //   var end = Date.now() + duration;
-      //   (function frame() {
-      //     confetti({
-      //       particleCount: 300, // A high number of particles
-      //       spread: 180, // Maximum spread (scatter in all directions)
-      //       startVelocity: 80, // Very high starting speed
-      //       gravity: 1.2, // Slightly increased gravity for quicker fall
-      //       origin: { x: Math.random(), y: Math.random() - 0.2 }, // Randomize start a bit
-      //       colors: [
-      //         '#ff0000',
-      //         '#00ff00',
-      //         '#0000ff',
-      //         '#ffff00',
-      //         '#ff00ff',
-      //         '#00ffff',
-      //       ],
-      //       shapes: ['square', 'circle'],
-      //       scalar: 1.2,
-      //       drift: 0.2,
-      //     });
-      //     if (Date.now() < end) {
-      //       requestAnimationFrame(frame);
-      //     }
-      //   })();
-      // }
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div
+        id="liveToast"
+        class="toast"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
+        <div class="toast-header">
+          <strong class="me-auto">Bootstrap</strong>
+          <small>Just now</small>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="toast"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="toast-body">Hello, world! This is a toast message.</div>
+      </div>
+    </div>
 
-      // document.addEventListener('DOMContentLoaded', function () {
-      //   if (document.querySelector('.alert-success')) {
-      //     launchConfetti();
-      //   }
-      // });
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var toastEl = document.querySelector('.toast');
+        var toast = new bootstrap.Toast(toastEl);
+        toast.show(); // Show the toast
+      });
     </script>
   </body>
 </html>

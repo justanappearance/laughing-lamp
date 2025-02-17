@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Review Songs</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css')}}"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container">
+        <a class="navbar-brand" href="{{ url_for('index') }}"
+          >Vocaloid Playlist Creator</a
+        >
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('review') }}"
+                >Review Songs</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container my-5">
+      <div
+        id="success-message"
+        style="display: none; color: green; font-weight: bold"
+      >
+        Video successfully updated!
+      </div>
+      <!-- Table of songs -->
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th class="align-middle">Playlist</th>
+            <th class="align-middle">Order</th>
+            <th class="align-middle">Song Name</th>
+            <th class="align-middle">Artist</th>
+            <th class="align-middle">VocaDB</th>
+            <th class="align-middle">Current Video</th>
+            <th class="align-middle">Search</th>
+            <th class="align-middle">Change Youtube Video</th>
+            <th class="align-middle">Mark as Reviewed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for song in songs %}
+          <tr id="song-{{ song.id }}">
+            <td>{{ song.playlist_name }}</td>
+            <td>{{ song.original_order }}</td>
+            <td>{{ song.song_name }}</td>
+            <td>{{ song.artist_name }}</td>
+            <td>
+              <a
+                href="https://vocadb.net/S/{{ song.vocadb_id }}"
+                target="_blank"
+              >
+                View on VocaDB
+              </a>
+            </td>
+            <td class="youtube-link" data-playlist-id="{{song.playlist_id}}">
+              <a
+                href="https://www.youtube.com/watch?v={{ song.youtube_video_id }}&list={{song.playlist_id}}"
+                target="_blank"
+              >
+                Link
+              </a>
+            </td>
+            <td>
+              <a
+                href="https://www.youtube.com/results?search_query={{ song.song_name|urlencode }}+{{ song.artist_name|urlencode }}"
+                target="_blank"
+              >
+                Link
+              </a>
+            </td>
+            <td>
+              <!-- Form to update the YouTube video for this song -->
+              <form
+                class="update-video-form"
+                data-youtube-video-id-old="{{ song.youtube_video_id }}"
+                data-song-id="{{song.id}}"
+              >
+                <input
+                  type="hidden"
+                  name="playlist_id"
+                  value="{{song.playlist_id}}"
+                />
+                <div class="input-group input-group-sm">
+                  <input
+                    type="text"
+                    name="youtube_video_url"
+                    class="form-control"
+                    placeholder="YouTube URL"
+                  />
+                  <button type="submit" class="btn btn-secondary">
+                    Change
+                  </button>
+                </div>
+              </form>
+            </td>
+            <td>
+              <!-- Button to mark the song as reviewed -->
+              <button
+                class="btn btn-success btn-sm mark-reviewed-btn"
+                data-song-id="{{ song.id }}"
+              >
+                Mark
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div
+        id="liveToast"
+        class="toast"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
+        <div class="toast-header">
+          <strong class="me-auto">Bootstrap</strong>
+          <small>Just now</small>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="toast"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="toast-body">Hello, world! This is a toast message.</div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Example using fetch to update YouTube video ID without reloading the page
+      document.querySelectorAll('.update-video-form').forEach((form) => {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          const youtubeVideoIdOld = this.dataset.youtubeVideoIdOld;
+          const youtubeURL = this.querySelector(
+            'input[name="youtube_video_url"]'
+          ).value;
+          const playlist_id = this.querySelector(
+            'input[name="playlist_id"]'
+          ).value;
+          const songId = this.dataset.songId;
+          fetch(
+            `/update_video?youtube_video_id_old=${youtubeVideoIdOld}&youtube_video_url=${encodeURIComponent(
+              youtubeURL
+            )}&playlist_id=${encodeURIComponent(playlist_id)}`,
+            {
+              method: 'GET',
+            }
+          )
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                const newVideoName = data.video_name; // Assuming the backend sends the new video name
+                const youtubeVideoIdNew = data.youtube_video_id_new;
+
+                const successMessage =
+                  document.getElementById('success-message');
+                successMessage.textContent = `Successfully updated video to: ${newVideoName}`;
+                successMessage.style.display = 'block';
+
+                setTimeout(() => {
+                  successMessage.style.display = 'none';
+                }, 3000);
+
+                const youtubeLinkTd = document.querySelector(
+                  `#song-${songId} .youtube-link`
+                );
+                const playlistId = youtubeLinkTd.dataset.playlistId;
+
+                // Update UI dynamically
+                document.querySelector(
+                  `#song-${songId} .youtube-link a`
+                ).href = `https://www.youtube.com/watch?v=${youtubeVideoIdNew}&list=${playlistId}`;
+              }
+            })
+            .catch((err) => console.error(err));
+        });
+      });
+
+      document.addEventListener('DOMContentLoaded', function () {
+        var toastEl = document.querySelector('.toast');
+        var toast = new bootstrap.Toast(toastEl);
+        toast.show(); // Show the toast
+      });
+
+      // Example using fetch to mark a song as reviewed
+      document.querySelectorAll('.mark-reviewed-btn').forEach((button) => {
+        button.addEventListener('click', function () {
+          const songId = this.dataset.songId;
+          fetch(`/mark_reviewed?song_id=${songId}`, { method: 'GET' })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                // Remove the row or indicate that it's reviewed
+                const row = document.getElementById(`song-${songId}`);
+                row.style.opacity = 0.5; // or remove the row: row.remove();
+              }
+            })
+            .catch((err) => console.error(err));
+        });
+      });
+    </script>
+  </body>
+</html>

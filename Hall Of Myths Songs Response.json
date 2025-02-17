@@ -1,0 +1,506 @@
+{
+  "items": [
+    {
+      "notes": "17 508 645 views",
+      "order": 1,
+      "song": {
+        "artistString": "黒うさP feat. 初音ミク",
+        "createDate": "2012-01-14T17:17:31",
+        "defaultName": "千本桜",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 309,
+        "id": 8394,
+        "lengthSeconds": 246,
+        "name": "千本桜",
+        "publishDate": "2011-09-17T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 1413,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 40
+      }
+    },
+    {
+      "notes": "16 907 807 views",
+      "order": 2,
+      "song": {
+        "artistString": "ika feat. 初音ミク",
+        "createDate": "2011-11-01T05:56:13",
+        "defaultName": "みくみくにしてあげる♪【してやんよ】",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 89,
+        "id": 1355,
+        "lengthSeconds": 98,
+        "name": "みくみくにしてあげる♪【してやんよ】",
+        "publishDate": "2007-09-20T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, Bilibili",
+        "ratingScore": 491,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 39
+      }
+    },
+    {
+      "notes": "16 285 230 views",
+      "order": 3,
+      "song": {
+        "artistString": "ryo feat. 初音ミク",
+        "createDate": "2011-11-01T03:50:59",
+        "defaultName": "メルト",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 219,
+        "id": 1322,
+        "lengthSeconds": 256,
+        "name": "メルト",
+        "publishDate": "2007-12-07T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, SoundCloud",
+        "ratingScore": 1127,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 31
+      }
+    },
+    {
+      "notes": "15 131 463 views",
+      "order": 4,
+      "song": {
+        "artistString": "wowaka feat. 初音ミク, 巡音ルカ",
+        "createDate": "2011-01-12T18:26:18",
+        "defaultName": "ワールズエンド・ダンスホール",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 291,
+        "id": 20,
+        "lengthSeconds": 218,
+        "name": "ワールズエンド・ダンスホール",
+        "publishDate": "2010-05-18T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 1401,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 30
+      }
+    },
+    {
+      "notes": "14 726 485 views",
+      "order": 5,
+      "song": {
+        "artistString": "ハチ feat. 初音ミク, GUMI",
+        "createDate": "2011-10-11T17:06:11",
+        "defaultName": "マトリョシカ",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 366,
+        "id": 368,
+        "lengthSeconds": 201,
+        "name": "マトリョシカ",
+        "publishDate": "2010-08-19T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 1649,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 31
+      }
+    },
+    {
+      "notes": "12 737 494 views",
+      "order": 6,
+      "song": {
+        "artistString": "DECO*27 feat. GUMI",
+        "createDate": "2011-11-01T06:26:20",
+        "defaultName": "モザイクロール",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 185,
+        "id": 1381,
+        "lengthSeconds": 182,
+        "name": "モザイクロール",
+        "publishDate": "2010-07-15T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, SoundCloud, Bilibili",
+        "ratingScore": 1057,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 44
+      }
+    },
+    {
+      "notes": "12 564 439 views",
+      "order": 7,
+      "song": {
+        "artistString": "wowaka, ヒトリエ feat. 初音ミク V4X (Dark)",
+        "createDate": "2017-08-04T17:06:30",
+        "defaultName": "アンノウン・マザーグース",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 276,
+        "id": 164107,
+        "lengthSeconds": 285,
+        "name": "アンノウン・マザ ーグース",
+        "publishDate": "2017-08-22T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, SoundCloud",
+        "ratingScore": 1198,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 28
+      }
+    },
+    {
+      "notes": "12 272 146 views",
+      "order": 8,
+      "song": {
+        "artistString": "wowaka feat. 初音ミク",
+        "createDate": "2011-11-01T22:10:01",
+        "defaultName": "ローリンガール",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 474,
+        "id": 1501,
+        "lengthSeconds": 196,
+        "name": "ローリンガール",
+        "publishDate": "2010-02-14T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, SoundCloud",
+        "ratingScore": 2184,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 33
+      }
+    },
+    {
+      "notes": "12 143 625 views",
+      "order": 9,
+      "song": {
+        "artistString": "Orangestar feat. IA",
+        "createDate": "2014-08-20T13:16:31",
+        "defaultName": "アスノヨゾラ哨戒班",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 69,
+        "id": 65861,
+        "lengthSeconds": 176,
+        "name": "アスノヨゾラ哨戒班",
+        "publishDate": "2014-08-19T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 320,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 28
+      }
+    },
+    {
+      "notes": "11 928 986 views",
+      "order": 10,
+      "song": {
+        "artistString": "DECO*27, Naoki Itai feat. 初音ミク V4X (Original)",
+        "createDate": "2016-01-08T13:10:31",
+        "defaultName": "ゴーストルール",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 167,
+        "id": 112085,
+        "lengthSeconds": 206,
+        "name": "ゴーストルール",
+        "publishDate": "2016-01-08T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 985,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 35
+      }
+    },
+    {
+      "notes": "11 511 155 views",
+      "order": 11,
+      "song": {
+        "artistString": " ハチ feat. 初音ミク",
+        "createDate": "2017-05-26T05:06:50",
+        "defaultName": "砂の惑星",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 183,
+        "id": 157860,
+        "lengthSeconds": 239,
+        "name": "砂の惑星",
+        "publishDate": "2017-07-20T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, Bilibili",
+        "ratingScore": 981,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 32
+      }
+    },
+    {
+      "notes": "11 468 019 views",
+      "order": 12,
+      "song": {
+        "artistString": "kemu feat. IA",
+        "createDate": "2012-04-11T14:41:27",
+        "defaultName": "六兆年と一夜物語",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 242,
+        "id": 11219,
+        "lengthSeconds": 221,
+        "name": "六兆年と一夜物語",
+        "publishDate": "2012-04-11T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 1055,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 34
+      }
+    },
+    {
+      "notes": "11 158 570 views",
+      "order": 13,
+      "song": {
+        "artistString": "cosMo@暴走P feat. 初音ミク",
+        "createDate": "2011-11-06T20:40:20",
+        "defaultName": "初音ミクの消失 -DEAD END-",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 233,
+        "id": 2925,
+        "lengthSeconds": 287,
+        "name": "初音ミクの消失 -DEAD END-",
+        "originalVersionId": 295872,
+        "publishDate": "2008-04-09T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 716,
+        "songType": "Remix",
+        "status": "Approved",
+        "version": 49
+      }
+    },
+    {
+      "notes": "10 957 465 views",
+      "order": 14,
+      "song": {
+        "artistString": "164 feat. GUMI",
+        "createDate": "2011-11-03T23:29:39",
+        "defaultName": "天ノ弱",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 127,
+        "id": 2356,
+        "lengthSeconds": 191,
+        "name": "天ノ弱",
+        "publishDate": "2011-05-28T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 687,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 30
+      }
+    },
+    {
+      "notes": "10 734 567 views",
+      "order": 15,
+      "song": {
+        "artistString": "ハチ feat. GUMI",
+        "createDate": "2013-10-28T15:36:22",
+        "defaultName": "ドーナツホール",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 182,
+        "id": 42676,
+        "lengthSeconds": 210,
+        "name": "ドーナツホール",
+        "publishDate": "2013-10-28T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 886,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 16
+      }
+    },
+    {
+      "notes": "10 717 864 views",
+      "order": 16,
+      "song": {
+        "artistString": "n-buna feat. 初音ミク V3 (Dark)",
+        "createDate": "2014-02-24T16:28:54",
+        "defaultName": "ウミユリ海底譚",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 100,
+        "id": 49871,
+        "lengthSeconds": 238,
+        "name": "ウミユリ海底譚",
+        "publishDate": "2014-02-24T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, Piapro",
+        "ratingScore": 451,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 26
+      }
+    },
+    {
+      "notes": "10 643 387 views",
+      "order": 17,
+      "song": {
+        "artistString": "れるりり feat. GUMI, 初音ミク",
+        "createDate": "2012-10-19T14:24:19",
+        "defaultName": "脳漿炸裂ガール",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 146,
+        "id": 17189,
+        "lengthSeconds": 191,
+        "name": "脳漿炸裂ガール",
+        "publishDate": "2012-03-13T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, Bilibili",
+        "ratingScore": 666,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 26
+      }
+    },
+    {
+      "notes": "10 548 826 views",
+      "order": 18,
+      "song": {
+        "artistString": "ryo, supercell feat. 初音ミク",
+        "createDate": "2011-11-01T03:52:03",
+        "defaultName": "ワールドイズマイン",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 221,
+        "id": 1326,
+        "lengthSeconds": 255,
+        "name": "ワールドイズマイン",
+        "publishDate": "2008-05-31T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 1197,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 25
+      }
+    },
+    {
+      "notes": "10 455 672 views",
+      "order": 19,
+      "song": {
+        "artistString": "wowaka feat. 初音ミク",
+        "createDate": "2011-11-01T22:33:20",
+        "defaultName": "裏表ラバーズ",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 232,
+        "id": 1508,
+        "lengthSeconds": 189,
+        "name": "裏表ラバーズ",
+        "publishDate": "2009-08-30T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, Piapro",
+        "ratingScore": 1096,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 26
+      }
+    },
+    {
+      "notes": "10 281 197 views",
+      "order": 20,
+      "song": {
+        "artistString": "doriko feat. 初音ミク",
+        "createDate": "2011-10-30T01:07:43",
+        "defaultName": "ロミオとシンデレラ",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 237,
+        "id": 1032,
+        "lengthSeconds": 280,
+        "name": "ロミオとシンデレ ラ",
+        "publishDate": "2009-04-06T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 1211,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 37
+      }
+    },
+    {
+      "notes": "10 227 795 views",
+      "order": 21,
+      "song": {
+        "artistString": "iroha(sasaki) feat. 鏡音リン",
+        "createDate": "2011-11-07T12:07:40",
+        "defaultName": "炉心融解",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 430,
+        "id": 3022,
+        "lengthSeconds": 333,
+        "name": "炉心融解",
+        "publishDate": "2008-12-19T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, SoundCloud",
+        "ratingScore": 1952,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 59
+      }
+    },
+    {
+      "notes": "10 197 688 views",
+      "order": 22,
+      "song": {
+        "artistString": "みきとP feat. 鏡音リン V4X (Power)",
+        "createDate": "2018-02-27T15:33:05",
+        "defaultName": "ロキ",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 118,
+        "id": 185363,
+        "lengthSeconds": 230,
+        "name": "ロキ",
+        "publishDate": "2018-02-27T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, Bilibili",
+        "ratingScore": 686,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 28
+      }
+    },
+    {
+      "notes": "10 046 814 views",
+      "order": 23,
+      "song": {
+        "artistString": "DECO*27, Rockwell feat. 初音ミク, 初音ミク V4 (English)",
+        "createDate": "2017-08-04T13:09:01",
+        "defaultName": "ヒバナ",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 103,
+        "id": 164074,
+        "lengthSeconds": 202,
+        "name": "ヒバナ",
+        "publishDate": "2017-08-04T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube, Bilibili",
+        "ratingScore": 627,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 31
+      }
+    },
+    {
+      "notes": "10,232,819 views",
+      "order": 24,
+      "song": {
+        "artistString": "かいりきベア feat. v flower",
+        "createDate": "2018-08-02T15:18:22.147",
+        "defaultName": "ベノム",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 120,
+        "id": 199209,
+        "lengthSeconds": 203,
+        "name": "ベノム",
+        "publishDate": "2018-08-02T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 638,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 21
+      }
+    },
+    {
+      "notes": "10,001,296 views",
+      "order": 25,
+      "song": {
+        "artistString": "Neru feat. 鏡音リン Append (Power)",
+        "createDate": "2012-12-21T17:47:14",
+        "defaultName": "ロストワンの号哭",
+        "defaultNameLanguage": "Japanese",
+        "favoritedTimes": 328,
+        "id": 19094,
+        "lengthSeconds": 217,
+        "name": "ロストワンの号哭",
+        "publishDate": "2013-03-04T00:00:00Z",
+        "pvServices": "NicoNicoDouga, Youtube",
+        "ratingScore": 1568,
+        "songType": "Original",
+        "status": "Approved",
+        "version": 25
+      }
+    }
+  ],
+  "totalCount": 25
+}

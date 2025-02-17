@@ -1,6 +1,7 @@
 from flask import (
     flash,
     Flask,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -11,6 +12,7 @@ from flask import (
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
+from googleapiclient.errors import HttpError
 import html
 import isodate
 import json
@@ -20,6 +22,8 @@ import requests
 import random
 import re
 import time
+
+import db
 
 app = Flask(__name__)
 
@@ -33,10 +37,11 @@ API_VERSION = "v3"
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 
 def get_youtube_service():
+    """Create and return a youtube API client for making API calls."""
     if "credentials" not in session:
         return redirect(url_for("authorize"))
     credentials = google.oauth2.credentials.Credentials(**session["credentials"])
@@ -65,6 +70,17 @@ PLAYLISTS = {
 
 
 def make_playlist(youtube, title):
+    """
+    Create a YouTube playlist and return its ID.
+
+    Parameters:
+    youtube: The authenticated YouTube API client.
+    title (str): The title of the playlist.
+
+    Returns:
+    str: The ID of the newly created playlist. Returns a debug playlist ID in DEBUG_MODE.
+         If an error occurs during creation, returns None.
+    """
     if DEBUG_MODE:
         return "PLuAYEy-JYPgJ05CzJXg745SmQatiJXmkN"
     request = youtube.playlists().insert(
@@ -80,15 +96,23 @@ def make_playlist(youtube, title):
 
     try:
         response = request.execute()
-        playlist_id = response["id"]
+        return response.get("id")
 
     except googleapiclient.errors.HttpError as e:
-        print(f"Error: {e}")
-
-    return playlist_id
+        print(f"Error creating playlist: {e}")
+        return None
 
 
 def extract_video_id(url):
+    """
+    Extracts the YouTube video ID from a YouTube URL.
+
+    Parameters:
+    url (str): The YouTube URL.
+
+    Returns:
+    str: The extracted video ID.
+    """
     if "youtu.be" in url:
         return url.split("/")[-1]
     elif "watch?v=" in url:
@@ -96,6 +120,16 @@ def extract_video_id(url):
 
 
 def get_video_with_highest_views(youtube, video_ids):
+    """
+    Given a list of YouTube video IDs, return the ID of the video with the most views.
+
+    Parameters:
+    youtube: The authenticated YouTube API client.
+    video_ids: A list of Youtube video IDs.
+
+    Returns:
+    str: YouTube video ID of video with most views.
+    """
     request = youtube.videos().list(part="statistics", id=",".join(video_ids))
     response = request.execute()
 
@@ -116,6 +150,18 @@ def get_video_with_highest_views(youtube, video_ids):
 
 
 def search_youtube(youtube, song_title, artist=None, max_results=10):
+    """
+    Search YouTube for a song title (optionally with an artist) and return the search results.
+
+    Parameters:
+    youtube: The authenticated YouTube API client.
+    song_title (str): The name of the song.
+    artist(str, optional): The name of the artist.
+    max_results(int): Number of search items to return. Defaults to 10
+
+    Returns:
+    list: A list of search result items (JSON format).
+    """
     query = f"{song_title} {artist}" if artist else song_title
 
     request = youtube.search().list(
@@ -132,8 +178,18 @@ def search_youtube(youtube, song_title, artist=None, max_results=10):
 
 
 def get_video_details(youtube, video_ids):
+    """
+    Given a list of YouTube video IDs, returns their data.
+
+    Parameters:
+    youtube: The authenticated YouTube API client.
+    video_ids: A list of YouTube video IDs.
+
+    returns:
+    dict: A dictionary mapping video IDs to their duration and view count.
+    """
     request = youtube.videos().list(
-        part="contentDetails,statistics", id=",".join(video_ids)
+        part="contentDetails,statistics,snippet", id=",".join(video_ids)
     )
     response = request.execute()
 
@@ -142,16 +198,48 @@ def get_video_details(youtube, video_ids):
         video_id = item["id"]
         duration = item["contentDetails"]["duration"]
         view_count = int(item["statistics"]["viewCount"])
-        video_data[video_id] = {"duration": duration, "view_count": view_count}
+        video_name = item["snippet"]["title"]
+        video_data[video_id] = {
+            "duration": duration,
+            "view_count": view_count,
+            "video_name": video_name,
+        }
     return video_data
 
 
 def convert_duration_to_seconds(iso_duration):
+    """
+    Convert iso_duration to seconds.
+
+    Parameters:
+    iso_duration (str): ISO 8601 duration string (e.g., "PT3M45S").
+
+    Returns:
+    int: Duration in seconds.
+    """
     duration = isodate.parse_duration(iso_duration)
     return int(duration.total_seconds())
 
 
 def decide_on_best_video(vocadb_duration, video_data, tolerance=5):
+    """
+     Selects the best YouTube video based on duration similarity and view count.
+
+    This function compares the given `vocadb_duration` with a dictionary of YouTube videos
+    (`video_data`) and selects the most suitable video by considering both view count
+    and duration closeness within a specified `tolerance`.
+
+    Parameters:
+    vocadb_duration (int): The expected song duration (in seconds) from VocaDB.
+    video_data (dict): A dictionary where keys are YouTube video IDs and values contain:
+                       - "duration" (str): ISO 8601 duration format.
+                       - "view_count" (int): The number of views for the video.
+    tolerance (int, optional): Acceptable difference (in seconds) between VocaDB
+                               duration and video duration. Defaults to 5.
+
+    Returns:
+    str: The video ID of the best matching YouTube video, or None if no suitable match is found.
+    """
     best_match = None
     best_score = -float("inf")
 
@@ -175,6 +263,22 @@ def decide_on_best_video(vocadb_duration, video_data, tolerance=5):
 
 
 def find_best_youtube_video(youtube, song_title, vocadb_duration, artist=None):
+    """
+    Searches YouTube for the best matching video based on title, artist, and duration.
+
+    This function performs a YouTube search using the song title (and optional artist),
+    retrieves video details, and selects the best match using duration similarity and
+    view count as ranking factors.
+
+    Parameters:
+    youtube: The authenticated YouTube API client.
+    song_title (str): The title of the song to search for.
+    vocadb_duration (int): The expected song duration (in seconds) from VocaDB.
+    artist (str, optional): The artist name to refine the search. Defaults to None.
+
+    Returns:
+    str: The video ID of the best matching YouTube video, or None if no suitable match is found.
+    """
     search_results = search_youtube(youtube, song_title, artist)
 
     video_ids = [video["id"]["videoId"] for video in search_results]
@@ -187,6 +291,22 @@ def find_best_youtube_video(youtube, song_title, vocadb_duration, artist=None):
 
 
 def add_video_to_playlist(youtube, playlist_id, video_id):
+    """
+    Add a YouTube video to a specified playlist with retry logic using exponential backoff.
+
+    This function attempts to insert a video into the given YouTube playlist by calling the
+    YouTube Data API's playlistItems.insert method. It uses exponential backoff with jitter
+    to retry the request in case of temporary errors (HTTP status codes 500, 503, or 409).
+
+    Parameters:
+        youtube: An authenticated YouTube API client instance.
+        playlist_id (str): The ID of the YouTube playlist where the video should be added.
+        video_id (str): The YouTube video ID to insert into the playlist.
+
+    Returns:
+        dict: The API response if the insertion is successful.
+        None: If the maximum number of retries is reached or a non-retriable error occurs.
+    """
     max_retries = 5
     delay = 1
     for attempt in range(max_retries):
@@ -221,14 +341,45 @@ def add_video_to_playlist(youtube, playlist_id, video_id):
             else:
                 print("❌ Fatal error. Not retrying.")
                 break
-        print("🚨 Max retries reached. Request failed.")
-        return None
+    print("🚨 Max retries reached. Request failed.")
+    return None
 
 
 def add_to_playlist(
     youtube, list_id, playlist_id, MAX_RESULTS=50, start=0, total_count=None
 ):
+    """
+    Process a VocaDB song list and add corresponding YouTube videos to a specified playlist.
 
+    This function retrieves songs from a VocaDB list (identified by `list_id`) in batches of
+    `MAX_RESULTS` starting from the given `start` index. For each song in the list, it:
+
+      1. Fetches song data from the VocaDB API, including the song's promotional videos (PVs).
+      2. Filters the PVs to identify original YouTube PVs.
+         - If more than one original YouTube PV is found, it selects the video with the highest view count.
+         - If exactly one original YouTube PV is found, that video is used.
+         - If no original YouTube PV is found, the function uses a YouTube search (based on the song name,
+           its length, and artist) to find the best available video.
+      3. Adds the selected YouTube video to the specified YouTube playlist using the YouTube Data API.
+      4. Inserts a record into the local database to track the song, including its VocaDB ID, song name,
+         artist name, selected YouTube video ID, review status (True if an original PV was found, False if a manual
+         review is needed), and the song's original order in the VocaDB list.
+
+    The function uses pagination to process the entire song list: after processing each batch of songs,
+    it increments the `start` parameter and repeats until all songs have been processed.
+
+    Parameters:
+        youtube: The authenticated YouTube API client.
+        list_id (int or str): The VocaDB list ID to retrieve songs from.
+        playlist_id (str): The YouTube playlist ID where the videos will be added.
+        MAX_RESULTS (int, optional): The maximum number of songs to retrieve per API call. Defaults to 50.
+        start (int, optional): The starting index for fetching songs. Defaults to 0.
+        total_count (int, optional): The total number of songs in the list (if known); if not provided,
+                                     it will be determined from the first API response. Defaults to None.
+
+    Returns:
+        None
+    """
     while total_count is None or start < total_count:
         response = requests.get(
             "https://vocadb.net/api/songLists/{list_id}/songs".format(list_id=list_id),
@@ -240,17 +391,13 @@ def add_to_playlist(
             timeout=10,
         )
         data_songs_from_list = response.json()
-        # print(data)
+        # print(data_songs_from_list)
 
         if total_count is None:
             total_count = data_songs_from_list["totalCount"]
 
-        song_id_list = []
-        for item in data_songs_from_list["items"]:
-            song_id = item["song"]["id"]
-            song_id_list.append(song_id)
-
-        for song_id in song_id_list:
+        for song_data in data_songs_from_list["items"]:
+            song_id = song_data["song"]["id"]
             url_get_song_by_id = f"https://vocadb.net/api/songs/{song_id}"
             response = requests.get(
                 url_get_song_by_id, params={"fields": "PVs"}, timeout=10
@@ -269,8 +416,10 @@ def add_to_playlist(
                 video_id_to_add = get_video_with_highest_views(
                     youtube, youtube_video_ids_to_check
                 )
+                review_status = True
             elif len(youtube_video_ids_to_check) == 1:
                 video_id_to_add = youtube_video_ids_to_check[0]
+                review_status = True
             else:
                 print(
                     f"No Original PVs Found for: {data_songs_by_id["defaultName"]} - {data_songs_by_id["artistString"]}"
@@ -281,16 +430,113 @@ def add_to_playlist(
                     data_songs_by_id["lengthSeconds"],
                     data_songs_by_id["artistString"],
                 )
+                review_status = False
 
             add_video_to_playlist(youtube, playlist_id, video_id_to_add)
+            db.insert_song(
+                song_id,
+                playlist_id,
+                data_songs_by_id["defaultName"],
+                data_songs_by_id["artistString"],
+                video_id_to_add,
+                review_status,
+                song_data["order"],
+            )
 
         start += MAX_RESULTS
 
     return
 
 
+def replace_video_in_playlist(youtube, playlist_id, old_video_id, new_video_id):
+    # """
+    # Replace a video in a YouTube playlist by deleting the old video and inserting a new one
+    # at the same position.
+
+    # This function does the following:
+    #   1. Retrieves the playlist items for the given playlist_id.
+    #   2. Finds the playlist item that corresponds to old_video_id and obtains its unique
+    #      playlistItem ID and current position.
+    #   3. Deletes the found playlist item.
+    #   4. Inserts the new video (new_video_id) into the playlist at the same position.
+
+    # Parameters:
+    #     youtube: An authenticated YouTube API client.
+    #     playlist_id (str): The ID of the YouTube playlist.
+    #     old_video_id (str): The YouTube video ID of the video to be replaced.
+    #     new_video_id (str): The YouTube video ID of the new video to insert.
+
+    # Returns:
+    #     dict: The API response from the insertion of the new video, or None if the old video
+    #           wasn't found.
+    # """
+    playlist_item_id = None
+    position = None
+    next_page_token = None
+
+    # Step 1: Retrieve playlist items to find the target video.
+
+    while True:
+        request = youtube.playlistItems().list(
+            part="snippet",
+            playlistId=playlist_id,
+            maxResults=50,  # Adjust if your playlist might have more than 50 items.
+            pageToken=next_page_token,
+        )
+        response = request.execute()
+        # print(response)
+
+        # Loop through the items to locate the old video.
+        for item in response.get("items", []):
+            # Check if this playlist item corresponds to the old video.
+            if item["snippet"]["resourceId"]["videoId"] == old_video_id:
+
+                playlist_item_id = item["id"]
+                position = item["snippet"]["position"]
+                break
+
+        next_page_token = response.get("nextPageToken")
+        if not next_page_token or playlist_item_id:
+            break
+
+    if playlist_item_id is None:
+        print("Old video not found in the playlist.")
+        return None
+
+    # Step 2: Delete the old playlist item.
+    youtube.playlistItems().delete(id=playlist_item_id).execute()
+
+    # Step 3: Insert the new video at the same position.
+    insert_request = youtube.playlistItems().insert(
+        part="snippet",
+        body={
+            "snippet": {
+                "playlistId": playlist_id,
+                "resourceId": {"kind": "youtube#video", "videoId": new_video_id},
+                "position": position,
+            }
+        },
+    )
+    insert_response = insert_request.execute()
+
+    return insert_response
+
+
 @app.route("/")
 def index():
+    """
+    Render the main index page with available playlists.
+
+    This route retrieves an authenticated YouTube API client using
+    `get_youtube_service()`. If the returned object is a redirect (indicating that
+    credentials are missing or the user needs to authorize), the route returns that
+    redirect. Otherwise, it renders the 'index.html' template and passes the global
+    PLAYLISTS dictionary so that the user can see the available playlists.
+
+    Returns:
+        A Flask response: either a redirect (if authentication is needed) or the rendered
+        index page with playlist information.
+    """
     youtube = get_youtube_service()
     if isinstance(youtube, Response):
         return youtube
@@ -299,6 +545,20 @@ def index():
 
 @app.route("/create_playlist")
 def create_playlist():
+    """
+    Create a new YouTube playlist based on a selected VocaDB list and add its videos.
+
+    This route expects a query parameter 'playlist_key' that corresponds to a key in the global
+    PLAYLISTS dictionary. It retrieves the corresponding playlist data, then uses the YouTube API
+    to create a new playlist with a title composed of the playlist's display name and description.
+    Next, it calls a function to add videos from the VocaDB list to the newly created playlist.
+    A success message is flashed (including a 'View Playlist' button linking to the new playlist),
+    and the user is redirected back to the index page.
+
+    Returns:
+        A Flask redirect response to the index page if the playlist is created successfully, or
+        an error response (HTTP 400) if the 'playlist_key' is invalid.
+    """
     youtube = get_youtube_service()
     playlist_key = request.args.get("playlist_key")
     if not playlist_key or playlist_key not in PLAYLISTS:
@@ -308,9 +568,13 @@ def create_playlist():
     playlist_id = make_playlist(
         youtube, f"{playlist_data["display_name"]} - {playlist_data["description"]}"
     )
-    # add_to_playlist(youtube, playlist_data["list_id"], playlist_id)
+    add_to_playlist(youtube, playlist_data["list_id"], playlist_id)
 
     playlist_url = f"https://www.youtube.com/playlist?list={playlist_id}"
+
+    db.insert_playlist(
+        playlist_id, playlist_data["display_name"], playlist_data["description"]
+    )
 
     flash(
         f"✅ Playlist '{playlist_data['display_name']}' created successfully! "
@@ -320,8 +584,57 @@ def create_playlist():
     return redirect(url_for("index"))
 
 
+@app.route("/review")
+def review():
+    songs = db.get_songs_for_review()
+    return render_template("review.html", songs=songs)
+
+
+@app.route("/update_video")
+def update_video():
+    youtube = get_youtube_service()
+    playlist_id = request.args.get("playlist_id")
+    youtube_video_id_old = request.args.get("youtube_video_id_old")
+    youtube_video_URL = request.args.get("youtube_video_url")
+    youtube_video_id_new = extract_video_id(youtube_video_URL)
+
+    video_details = get_video_details(youtube, [youtube_video_id_new])
+    new_video_name = video_details[youtube_video_id_new]["video_name"]
+
+    replace_video_in_playlist(
+        youtube, playlist_id, youtube_video_id_old, youtube_video_id_new
+    )
+    success = db.update_song_video(youtube_video_id_old, youtube_video_id_new)
+
+    return jsonify(
+        {
+            "success": success,
+            "video_name": new_video_name,
+            "youtube_video_id_new": youtube_video_id_new,
+        }
+    )
+
+
+@app.route("/mark_reviewed")
+def mark_reviewed():
+    song_id = request.args.get("song_id")
+    success = db.mark_song_reviewed(song_id)
+    return jsonify({"success": success})
+
+
 @app.route("/authorize")
 def authorize():
+    """
+    Initiate the OAuth 2.0 authorization flow with Google.
+
+    This route creates an OAuth 2.0 flow instance using the client secrets file and the
+    specified scopes. It then sets the redirect URI to point to the 'oauth2callback' route,
+    generates an authorization URL, saves the generated state in the session for security,
+    and finally redirects the user to the Google OAuth consent screen.
+
+    Returns:
+        A Flask redirect response to the Google OAuth 2.0 authorization URL.
+    """
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE, scopes=SCOPES
     )
@@ -338,6 +651,18 @@ def authorize():
 
 @app.route("/oauth2callback")
 def oauth2callback():
+    """
+    Handle the OAuth 2.0 callback from Google.
+
+    This route is the redirect URI that Google calls after the user has authorized the app.
+    It retrieves the saved state from the session, recreates the OAuth flow, and uses the full
+    callback URL (which includes the authorization code) to fetch access and refresh tokens.
+    The obtained credentials are stored in the session for future API calls, and the user is
+    redirected to the index page.
+
+    Returns:
+        A Flask redirect response to the 'index' route.
+    """
     state = session.get("state")
 
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
@@ -362,9 +687,25 @@ def oauth2callback():
 
 @app.route("/clear")
 def clear_credentials():
+    """
+    Clear stored OAuth 2.0 credentials from the session.
+
+    This route is used to log the user out by clearing the session of any stored credentials.
+    After clearing the session, the user is redirected back to the index page.
+
+    Returns:
+        A Flask redirect response to the 'index' route.
+    """
     session.clear()
     return redirect(url_for("index"))
 
 
 if __name__ == "__main__":
+    """
+    Application entry point.
+
+    This block ensures that when the script is run directly, the database tables are created,
+    and the Flask application is started on 'localhost' at port 8080 with debug mode enabled.
+    """
+    db.create_tables()
     app.run("localhost", 8080, debug=True)
