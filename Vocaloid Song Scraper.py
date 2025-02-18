@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from flask import (
     flash,
     Flask,
@@ -7,6 +8,7 @@ from flask import (
     request,
     Response,
     session,
+    stream_with_context,
     url_for,
 )
 import google.oauth2.credentials
@@ -23,13 +25,15 @@ import random
 import re
 import time
 
+from .env import secret_key
 import db
+
 
 app = Flask(__name__)
 
 app.secret_key = "This is my super secret key that no one is supposed to see."
 
-CLIENT_SECRETS_FILE = "client_secret_43471750843-3amh1i9l27dp2eil5a19ak95gt0sf6n8.apps.googleusercontent.com.json"
+CLIENT_SECRETS_FILE = "client_secret.json"
 
 SCOPES = ["https://www.googleapis.com/auth/youtube"]
 API_SERVICE_NAME = "youtube"
@@ -55,34 +59,31 @@ PLAYLISTS = {
         "display_name": "Hall of Myths",
         "description": "Vocaloid Songs That Have Reached 10,000,000+ Views On NicoNicoDouga",
         "list_id": 6477,
+        "current_song_number": 0,
+        "total_song_number": 0,
+        "playlist_id": 0,
     },
     "hall_of_legends": {
         "display_name": "Hall of Legends",
         "description": "Vocaloid Songs That Have Reached 1,000,000+ Views On NicoNicoDouga",
         "list_id": 30,
+        "current_song_number": 0,
+        "total_song_number": 0,
+        "playlist_id": 0,
     },
     "hall_of_fame": {
         "display_name": "Hall of Fame",
         "description": "Vocaloid Songs That Have Reached 100,000+ Views On NicoNicoDouga",
         "list_id": 186,
+        "current_song_number": 0,
+        "total_song_number": 0,
+        "playlist_id": 0,
     },
 }
 
 
 def make_playlist(youtube, title):
-    """
-    Create a YouTube playlist and return its ID.
 
-    Parameters:
-    youtube: The authenticated YouTube API client.
-    title (str): The title of the playlist.
-
-    Returns:
-    str: The ID of the newly created playlist. Returns a debug playlist ID in DEBUG_MODE.
-         If an error occurs during creation, returns None.
-    """
-    if DEBUG_MODE:
-        return "PLuAYEy-JYPgJ05CzJXg745SmQatiJXmkN"
     request = youtube.playlists().insert(
         part="snippet,status",
         body={
@@ -99,7 +100,22 @@ def make_playlist(youtube, title):
         return response.get("id")
 
     except googleapiclient.errors.HttpError as e:
-        print(f"Error creating playlist: {e}")
+        print(e)
+        error_content = json.loads(
+            e.content.decode("utf-8")
+        )  # Convert from bytes to dict
+        reason = (
+            error_content.get("error", {})
+            .get("errors", [{}])[0]
+            .get("reason", "Unknown error")
+        )
+
+        error_message = f"Error creating playlist: {reason}"
+        json_error_message = json.dumps({"error": error_message}, ensure_ascii=False)
+
+        # yield f"data: {json.dumps({'error': 'Invalid playlist key'})}\n\n"
+
+        yield f"data: {json_error_message}\n\n"
         return None
 
 
@@ -346,7 +362,7 @@ def add_video_to_playlist(youtube, playlist_id, video_id):
 
 
 def add_to_playlist(
-    youtube, list_id, playlist_id, MAX_RESULTS=50, start=0, total_count=None
+    youtube, list_id, playlist_id, start=0, MAX_RESULTS=50, total_count=None
 ):
     """
     Process a VocaDB song list and add corresponding YouTube videos to a specified playlist.
@@ -391,10 +407,10 @@ def add_to_playlist(
             timeout=10,
         )
         data_songs_from_list = response.json()
-        # print(data_songs_from_list)
 
         if total_count is None:
             total_count = data_songs_from_list["totalCount"]
+            db.update_total_song_number(total_count, playlist_id)
 
         for song_data in data_songs_from_list["items"]:
             song_id = song_data["song"]["id"]
@@ -403,14 +419,13 @@ def add_to_playlist(
                 url_get_song_by_id, params={"fields": "PVs"}, timeout=10
             )
             data_songs_by_id = response.json()
-            # print(data)
+
             youtube_video_ids_to_check, video_id_to_add = [], None
             for item in data_songs_by_id["pvs"]:
                 if item["service"] != "Youtube" or item["pvType"] != "Original":
                     continue
                 else:
-                    url = item["url"]
-                    youtube_video_ids_to_check.append(extract_video_id(url))
+                    youtube_video_ids_to_check.append(extract_video_id(item["url"]))
 
             if len(youtube_video_ids_to_check) > 1:
                 video_id_to_add = get_video_with_highest_views(
@@ -433,6 +448,7 @@ def add_to_playlist(
                 review_status = False
 
             add_video_to_playlist(youtube, playlist_id, video_id_to_add)
+
             db.insert_song(
                 song_id,
                 playlist_id,
@@ -443,9 +459,21 @@ def add_to_playlist(
                 song_data["order"],
             )
 
+            video_details = get_video_details(youtube, [video_id_to_add])
+            video_name = video_details[video_id_to_add]["video_name"]
+            current_song_number = song_data["order"]
+
+            print(video_name)
+            print(type(video_name))
+            message = f"data: {json.dumps({'message': f'✅ Successfully added: {video_name} to playlist. ({current_song_number}/{total_count})'})}\n\n"
+            print(message)
+            yield message
+
         start += MAX_RESULTS
 
-    return
+    db.update_current_song_number(total_count, playlist_id)
+
+    return True
 
 
 def replace_video_in_playlist(youtube, playlist_id, old_video_id, new_video_id):
@@ -524,64 +552,131 @@ def replace_video_in_playlist(youtube, playlist_id, old_video_id, new_video_id):
 
 @app.route("/")
 def index():
-    """
-    Render the main index page with available playlists.
-
-    This route retrieves an authenticated YouTube API client using
-    `get_youtube_service()`. If the returned object is a redirect (indicating that
-    credentials are missing or the user needs to authorize), the route returns that
-    redirect. Otherwise, it renders the 'index.html' template and passes the global
-    PLAYLISTS dictionary so that the user can see the available playlists.
-
-    Returns:
-        A Flask response: either a redirect (if authentication is needed) or the rendered
-        index page with playlist information.
-    """
     youtube = get_youtube_service()
     if isinstance(youtube, Response):
         return youtube
-    return render_template("index.html", playlists=PLAYLISTS)
 
+    # we have no playlist id if there's no tables
 
-@app.route("/create_playlist")
-def create_playlist():
-    """
-    Create a new YouTube playlist based on a selected VocaDB list and add its videos.
+    # playlists_info = db.get_playlist_info()
+    # print(playlists_info)
+    # playlists_info_dict = {p["playlist_id"]: p for p in playlists_info}
+    # print(playlists_info_dict)
+    # for key, value in PLAYLISTS.items():
+    #     playlist_id = value["list_id"]
+    #     if playlist_id in playlists_info_dict:
+    #         value["current_song_number"] = playlists_info_dict[playlist_id][
+    #             "current_song_number"
+    #         ]
+    #         value["total_song_number"] = playlists_info_dict[playlist_id][
+    #             "total_song_number"
+    #         ]
+    #     else:
+    #         value["current_song_number"] = 0
+    #         value["total_song_number"] = 0
 
-    This route expects a query parameter 'playlist_key' that corresponds to a key in the global
-    PLAYLISTS dictionary. It retrieves the corresponding playlist data, then uses the YouTube API
-    to create a new playlist with a title composed of the playlist's display name and description.
-    Next, it calls a function to add videos from the VocaDB list to the newly created playlist.
-    A success message is flashed (including a 'View Playlist' button linking to the new playlist),
-    and the user is redirected back to the index page.
-
-    Returns:
-        A Flask redirect response to the index page if the playlist is created successfully, or
-        an error response (HTTP 400) if the 'playlist_key' is invalid.
-    """
-    youtube = get_youtube_service()
-    playlist_key = request.args.get("playlist_key")
-    if not playlist_key or playlist_key not in PLAYLISTS:
-        return "Invalid playlist selection", 400
-
-    playlist_data = PLAYLISTS[playlist_key]
-    playlist_id = make_playlist(
-        youtube, f"{playlist_data["display_name"]} - {playlist_data["description"]}"
-    )
-    add_to_playlist(youtube, playlist_data["list_id"], playlist_id)
-
-    playlist_url = f"https://www.youtube.com/playlist?list={playlist_id}"
-
-    db.insert_playlist(
-        playlist_id, playlist_data["display_name"], playlist_data["description"]
+    # print(playlists_info)
+    # print(PLAYLISTS)
+    return render_template(
+        "index.html",
+        playlists=PLAYLISTS,
     )
 
-    flash(
-        f"✅ Playlist '{playlist_data['display_name']}' created successfully! "
-        f"<a href='{playlist_url}' target='_blank' class='btn btn-success btn-sm'> View Playlist</a>",
-        "success",
+
+# @app.route("/create_playlist")
+# def create_playlist():
+
+#     youtube = get_youtube_service()
+#     playlist_key = request.args.get("playlist_key")
+#     if not playlist_key or playlist_key not in PLAYLISTS:
+#         return "Invalid playlist selection", 400
+
+#     playlist_data = PLAYLISTS[playlist_key]
+#     playlist_id = make_playlist(
+#         youtube, f"{playlist_data["display_name"]} - {playlist_data["description"]}"
+#     )
+#     print(playlist_id)
+#     add_to_playlist(youtube, playlist_data["list_id"], playlist_id)
+
+#     playlist_url = f"https://www.youtube.com/playlist?list={playlist_id}"
+
+#     db.insert_playlist(
+#         playlist_id, playlist_data["display_name"], playlist_data["description"]
+#     )
+
+#     flash(
+#         f"✅ Playlist '{playlist_data['display_name']}' created successfully! "
+#         f"<a href='{playlist_url}' target='_blank' class='btn btn-success btn-sm'> View Playlist</a>",
+#         "success",
+#     )
+#     return redirect(url_for("index"))
+
+
+# @app.route("/continue_playlist")
+# def continue_playlist():
+#     youtube = get_youtube_service()
+#     list_id = request.args.get("list_id")
+#     playlist_id = request.args.get("playlist_id")
+#     current_song_number = request.args.get("current_song_number")
+#     success = add_to_playlist(youtube, list_id, playlist_id, current_song_number)
+#     return jsonify(
+#         {
+#             "success": success,
+#         }
+#     )
+
+
+@app.route("/stream_playlist")
+def stream_playlist():
+    def event_stream():
+        youtube = get_youtube_service()
+        list_id = request.args.get("list_id")
+        playlist_id = request.args.get("playlist_id")
+        current_song_number = int(request.args.get("current_song_number", 0))
+
+        try:
+
+            if current_song_number == 0:
+                playlist_key = request.args.get("key")
+
+                if not playlist_key or playlist_key not in PLAYLISTS:
+
+                    yield f"data: {json.dumps({'error': 'Invalid playlist key'})}\n\n"
+                    return
+                playlist_data = PLAYLISTS[playlist_key]
+
+                playlist_id = make_playlist(
+                    youtube,
+                    f"{playlist_data["display_name"]} - {playlist_data["description"]}",
+                )
+                if not isinstance(playlist_id, str):
+                    yield from playlist_id
+                    return
+
+                db.insert_playlist(
+                    playlist_id,
+                    playlist_data["display_name"],
+                    playlist_data["description"],
+                )
+
+                yield f"data: {json.dumps({'message': f'✅ Created playlist: {playlist_data["display_name"]}'})}\n\n"
+
+            for video_info in add_to_playlist(
+                youtube, list_id, playlist_id, current_song_number
+            ):
+                yield f"data: {json.dumps(video_info)}\n\n"
+                time.sleep(1)
+
+            playlist_url = f"https://www.youtube.com/playlist?list={playlist_id}"
+            yield f"data: {json.dumps({'message': f'🎵 Playlist complete! <a href=\"{playlist_url}\" target=\"_blank\" class=\"btn btn-success btn-sm\"> View Playlist</a>'})}\n\n"
+
+        except googleapiclient.errors.HttpError as e:
+            playlist_url = f"https://www.youtube.com/playlist?list={playlist_id}"
+            yield f"data: {json.dumps({'error': f'⚠️ YouTube API quota reached. Try again later. Current playlist: <a href=\\"{playlist_url}\" target=\"_blank\" class=\"btn btn-success btn-sm\"> View Playlist</a>'})}\n\n"
+
+    return Response(
+        stream_with_context(event_stream()), content_type="text/event-stream"
     )
-    return redirect(url_for("index"))
 
 
 @app.route("/review")

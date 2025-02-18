@@ -47,6 +47,8 @@ def create_tables(connection, cursor):
     playlist_name VARCHAR(255) NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    current_song_number INT,
+    total_song_number INT,
     UNIQUE (playlist_id)
     )
     """
@@ -149,5 +151,36 @@ def mark_song_reviewed(connection, cursor, song_id):
     return True
 
 
-# @with_db_connection
-# def get_playlist_name(connection,cursor,playlist_id):
+@with_db_connection
+def get_playlist_info(connection, cursor):
+    query = "SELECT id,playlist_id,playlist_name,description,current_song_number,total_song_number FROM playlists"
+
+    cursor.execute(query)
+
+    columns = [column[0] for column in cursor.description]
+
+    playlists = [
+        {columns[i]: row[i] for i in range(len(columns))} for row in cursor.fetchall()
+    ]
+
+    return playlists
+
+
+@with_db_connection
+def update_total_song_number(connection, cursor, total_song_number, playlist_id):
+    update_query = "UPDATE playlists SET total_song_number=%s WHERE playlist_id=%s"
+    values = (total_song_number, playlist_id)
+    cursor.execute(update_query, values)
+    connection.commit()
+
+    return True
+
+
+@with_db_connection
+def update_current_song_number(connection, cursor, current_song_number, playlist_id):
+    update_query = "UPDATE playlists SET current_song_number=%s WHERE playlist_id=%s"
+    values = (current_song_number, playlist_id)
+    cursor.execute(update_query, values)
+    connection.commit()
+
+    return True

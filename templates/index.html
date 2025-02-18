@@ -8,6 +8,10 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css')}}"
+    />
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -67,11 +71,39 @@
                 >
               </h5>
               <p class="card-text">{{playlist.description}}</p>
-              <form action="{{url_for('create_playlist')}}" method="get">
-                <input type="hidden" name="playlist_key" value="{{ key }}" />
-                <button type="submit" class="btn btn-primary">
+              <form>
+                {% if playlist.current_song_number!=0 %}
+                <button
+                  class="btn btn-outline-primary continue-btn"
+                  data-playlist-id="{{ playlist.playlist_id }}"
+                  data-current-song-number="{{playlist.current_song_number}}"
+                  data-total-song-number="{{playlist.total_song_number}}"
+                  data-list-id="{{playlist.list_id}}"
+                  data-playlist-key="{{key}}"
+                >
+                  Continue Creating Playlist
+                </button>
+                <a
+                  href="https://www.youtube.com/playlist?list={{ playlist.playlist_id }}"
+                  target="_blank"
+                >
+                  <span class="playlist-progress">
+                    Song {{ playlist.current_song_number }}/{{
+                    playlist.total_song_number }}
+                  </span>
+                </a>
+                {% else %}
+                <button
+                  class="btn btn-primary continue-btn"
+                  data-playlist-id="{{ playlist.playlist_id }}"
+                  data-current-song-number="{{playlist.current_song_number}}"
+                  data-total-song-number="{{playlist.total_song_number}}"
+                  data-list-id="{{playlist.list_id}}"
+                  data-playlist-key="{{key}}"
+                >
                   Create Playlist
                 </button>
+                {% endif %}
               </form>
             </div>
           </div>
@@ -80,34 +112,85 @@
       </div>
     </div>
 
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-      <div
-        id="liveToast"
-        class="toast"
-        role="alert"
-        aria-live="assertive"
-        aria-atomic="true"
-      >
-        <div class="toast-header">
-          <strong class="me-auto">Bootstrap</strong>
-          <small>Just now</small>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="toast"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="toast-body">Hello, world! This is a toast message.</div>
-      </div>
-    </div>
+    <div id="toast-container" class="toast-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        var toastEl = document.querySelector('.toast');
-        var toast = new bootstrap.Toast(toastEl);
-        toast.show(); // Show the toast
+      function showToast(message) {
+        // Get the toast container element
+        const toastContainer = document.getElementById('toast-container');
+
+        // Create a new toast element
+        const toastDiv = document.createElement('div');
+        toastDiv.classList.add('toast');
+        toastDiv.setAttribute('role', 'alert');
+        toastDiv.setAttribute('aria-live', 'assertive');
+        toastDiv.setAttribute('aria-atomic', 'true');
+        toastDiv.setAttribute('delay', 10000);
+
+        // Set the inner HTML with the message and the toast header
+        toastDiv.innerHTML = `
+        <div class="toast-header">
+          <strong class="me-auto">Notification</strong>
+          <small>Just now</small>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">${message}</div>
+        `;
+
+        // Append the toast to the container
+        toastContainer.appendChild(toastDiv);
+
+        // Initialize the Bootstrap toast with options (optional, e.g., 3-second delay)
+        const toast = new bootstrap.Toast(toastDiv);
+
+        // Show the toast
+        toast.show();
+
+        // Clean up after the toast has finished showing
+        toastDiv.addEventListener('hidden.bs.toast', () => {
+          toastDiv.remove(); // Remove the toast from the DOM after it's hidden
+        });
+      }
+
+      document.querySelectorAll('.continue-btn').forEach((btn) => {
+        btn.addEventListener('click', (event) => {
+          event.preventDefault();
+
+          const playlist_id = btn.getAttribute('data-playlist-id');
+          const current_song_number = btn.getAttribute(
+            'data-current-song-number'
+          );
+          const total_song_number = btn.getAttribute('data-total-song-number');
+          const list_id = btn.getAttribute('data-list-id');
+          const key = btn.getAttribute('data-playlist-key');
+
+          const eventSource = new EventSource(
+            `/stream_playlist?playlist_id=${playlist_id}&list_id=${list_id}&current_song_number=${current_song_number}&key=${key}`
+          );
+
+          eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.error) {
+              // If an error message is in the data, show it
+              showToast(`${data.error}`);
+              eventSource.close();
+            } else {
+              // If no error, proceed as normal
+              const decodedMessage = JSON.parse(`${data.message}`);
+              showToast(decodedMessage);
+            }
+          };
+
+          eventSource.onerror = (err) => {
+            const data = JSON.parse(event.data);
+            console.error('Error with SSE:', err);
+            if (err.target.responseText) {
+              console.error('Error data from server:', err.target.responseText); // This will log the error message sent by the backend
+            }
+            eventSource.close(); // Stop listening if there's an error
+          };
+        });
       });
     </script>
   </body>
