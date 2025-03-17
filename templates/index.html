@@ -37,6 +37,9 @@
                 >Review Songs</a
               >
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{url_for('logout')}}"> Logout </a>
+            </li>
           </ul>
         </div>
       </div>
@@ -65,41 +68,47 @@
             <div class="card-body">
               <h5 class="card-title">
                 <a
-                  href="https://vocadb.net/L/{{playlist.list_id}}"
+                  href="https://vocadb.net/L/{{ playlist.list_id }}"
                   target="_blank"
-                  >{{playlist.display_name}}</a
                 >
+                  {{ playlist.display_name }}
+                </a>
               </h5>
-              <p class="card-text">{{playlist.description}}</p>
+              <p class="card-text">{{ playlist.description }}</p>
               <form>
-                {% if playlist.current_song_number!=0 %}
-                <button
-                  class="btn btn-outline-primary continue-btn"
-                  data-playlist-id="{{ playlist.playlist_id }}"
-                  data-current-song-number="{{playlist.current_song_number}}"
-                  data-total-song-number="{{playlist.total_song_number}}"
-                  data-list-id="{{playlist.list_id}}"
-                  data-playlist-key="{{key}}"
-                >
-                  Continue Creating Playlist
-                </button>
+                {% if playlist.current_song_number != 0 %} {% if
+                playlist.current_song_number == playlist.total_song_number %}
+                <!-- Playlist is complete; show link to YouTube playlist -->
                 <a
                   href="https://www.youtube.com/playlist?list={{ playlist.playlist_id }}"
                   target="_blank"
+                  class="btn btn-success"
                 >
-                  <span class="playlist-progress">
-                    Song {{ playlist.current_song_number }}/{{
-                    playlist.total_song_number }}
-                  </span>
+                  View Playlist ({{ playlist.current_song_number }}/{{
+                  playlist.total_song_number }})
                 </a>
                 {% else %}
+                <!-- Playlist is in progress; show continue button -->
+                <button
+                  class="btn btn-outline-primary continue-btn"
+                  data-playlist-id="{{ playlist.playlist_id }}"
+                  data-current-song-number="{{ playlist.current_song_number }}"
+                  data-total-song-number="{{ playlist.total_song_number }}"
+                  data-list-id="{{ playlist.list_id }}"
+                  data-playlist-key="{{ key }}"
+                >
+                  Continue Creating Playlist ({{ playlist.current_song_number
+                  }}/{{ playlist.total_song_number }})
+                </button>
+                {% endif %} {% else %}
+                <!-- No playlist created yet; show create button -->
                 <button
                   class="btn btn-primary continue-btn"
                   data-playlist-id="{{ playlist.playlist_id }}"
-                  data-current-song-number="{{playlist.current_song_number}}"
-                  data-total-song-number="{{playlist.total_song_number}}"
-                  data-list-id="{{playlist.list_id}}"
-                  data-playlist-key="{{key}}"
+                  data-current-song-number="{{ playlist.current_song_number }}"
+                  data-total-song-number="{{ playlist.total_song_number }}"
+                  data-list-id="{{ playlist.list_id }}"
+                  data-playlist-key="{{ key }}"
                 >
                   Create Playlist
                 </button>
@@ -116,24 +125,27 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      function showToast(message) {
+      function showToast(message, type = 'normal') {
         // Get the toast container element
         const toastContainer = document.getElementById('toast-container');
 
         // Create a new toast element
         const toastDiv = document.createElement('div');
         toastDiv.classList.add('toast');
+        if (type === 'success') {
+          toastDiv.classList.add('toast-success');
+        } else if (type === 'error') {
+          toastDiv.classList.add('toast-error');
+        }
         toastDiv.setAttribute('role', 'alert');
         toastDiv.setAttribute('aria-live', 'assertive');
         toastDiv.setAttribute('aria-atomic', 'true');
-        toastDiv.setAttribute('delay', 10000);
 
         // Set the inner HTML with the message and the toast header
         toastDiv.innerHTML = `
         <div class="toast-header">
           <strong class="me-auto">Notification</strong>
           <small>Just now</small>
-          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body">${message}</div>
         `;
@@ -142,7 +154,7 @@
         toastContainer.appendChild(toastDiv);
 
         // Initialize the Bootstrap toast with options (optional, e.g., 3-second delay)
-        const toast = new bootstrap.Toast(toastDiv);
+        const toast = new bootstrap.Toast(toastDiv, { delay: 4000 });
 
         // Show the toast
         toast.show();
@@ -173,21 +185,31 @@
             const data = JSON.parse(event.data);
             if (data.error) {
               // If an error message is in the data, show it
-              showToast(`${data.error}`);
+              showToast(`${data.error}`, 'error');
               eventSource.close();
-            } else {
+            } else if (data.success) {
               // If no error, proceed as normal
-              const decodedMessage = JSON.parse(`${data.message}`);
-              showToast(decodedMessage);
+              showToast(`${data.success}`, 'success');
+            } else if (data.message) {
+              console.log('Song added message received:', data.message);
+              showToast(`${data.message}`, 'normal');
             }
           };
 
           eventSource.onerror = (err) => {
-            const data = JSON.parse(event.data);
             console.error('Error with SSE:', err);
-            if (err.target.responseText) {
-              console.error('Error data from server:', err.target.responseText); // This will log the error message sent by the backend
+
+            if (err.target && err.target.responseText) {
+              try {
+                const data = JSON.parse(err.target.responseText);
+                console.error('Error data from server:', data);
+              } catch (e) {
+                console.error('Failed to parse error message:', e);
+              }
+            } else {
+              console.error('No error message received from server.');
             }
+
             eventSource.close(); // Stop listening if there's an error
           };
         });

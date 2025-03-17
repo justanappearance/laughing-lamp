@@ -37,6 +37,9 @@
                 >Review Songs</a
               >
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{url_for('logout')}}"> Logout </a>
+            </li>
           </ul>
         </div>
       </div>
@@ -79,12 +82,14 @@
               </a>
             </td>
             <td class="youtube-link" data-playlist-id="{{song.playlist_id}}">
+              {% if song.youtube_video_id is none %} None {% else %}
               <a
                 href="https://www.youtube.com/watch?v={{ song.youtube_video_id }}&list={{song.playlist_id}}"
                 target="_blank"
               >
                 Link
               </a>
+              {% endif %}
             </td>
             <td>
               <a
@@ -124,6 +129,7 @@
               <button
                 class="btn btn-success btn-sm mark-reviewed-btn"
                 data-song-id="{{ song.id }}"
+                data-song-name="{{song.song_name}}"
               >
                 Mark
               </button>
@@ -134,30 +140,50 @@
       </table>
     </div>
 
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-      <div
-        id="liveToast"
-        class="toast"
-        role="alert"
-        aria-live="assertive"
-        aria-atomic="true"
-      >
-        <div class="toast-header">
-          <strong class="me-auto">Bootstrap</strong>
-          <small>Just now</small>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="toast"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="toast-body">Hello, world! This is a toast message.</div>
-      </div>
-    </div>
+    <div id="toast-container" class="toast-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+      function showToast(message, type = 'normal') {
+        // Get the toast container element
+        const toastContainer = document.getElementById('toast-container');
+
+        // Create a new toast element
+        const toastDiv = document.createElement('div');
+        toastDiv.classList.add('toast');
+        if (type === 'success') {
+          toastDiv.classList.add('toast-success');
+        } else if (type === 'error') {
+          toastDiv.classList.add('toast-error');
+        }
+        toastDiv.setAttribute('role', 'alert');
+        toastDiv.setAttribute('aria-live', 'assertive');
+        toastDiv.setAttribute('aria-atomic', 'true');
+
+        // Set the inner HTML with the message and the toast header
+        toastDiv.innerHTML = `
+        <div class="toast-header">
+          <strong class="me-auto">Notification</strong>
+          <small>Just now</small>
+        </div>
+        <div class="toast-body">${message}</div>
+        `;
+
+        // Append the toast to the container
+        toastContainer.appendChild(toastDiv);
+
+        // Initialize the Bootstrap toast with options (optional, e.g., 3-second delay)
+        const toast = new bootstrap.Toast(toastDiv, { delay: 4000 });
+
+        // Show the toast
+        toast.show();
+
+        // Clean up after the toast has finished showing
+        toastDiv.addEventListener('hidden.bs.toast', () => {
+          toastDiv.remove(); // Remove the toast from the DOM after it's hidden
+        });
+      }
+
       // Example using fetch to update YouTube video ID without reloading the page
       document.querySelectorAll('.update-video-form').forEach((form) => {
         form.addEventListener('submit', function (e) {
@@ -173,7 +199,9 @@
           fetch(
             `/update_video?youtube_video_id_old=${youtubeVideoIdOld}&youtube_video_url=${encodeURIComponent(
               youtubeURL
-            )}&playlist_id=${encodeURIComponent(playlist_id)}`,
+            )}&playlist_id=${encodeURIComponent(
+              playlist_id
+            )}&song_id=${songId}`,
             {
               method: 'GET',
             }
@@ -181,50 +209,38 @@
             .then((response) => response.json())
             .then((data) => {
               if (data.success) {
-                const newVideoName = data.video_name; // Assuming the backend sends the new video name
                 const youtubeVideoIdNew = data.youtube_video_id_new;
-
-                const successMessage =
-                  document.getElementById('success-message');
-                successMessage.textContent = `Successfully updated video to: ${newVideoName}`;
-                successMessage.style.display = 'block';
-
-                setTimeout(() => {
-                  successMessage.style.display = 'none';
-                }, 3000);
 
                 const youtubeLinkTd = document.querySelector(
                   `#song-${songId} .youtube-link`
                 );
                 const playlistId = youtubeLinkTd.dataset.playlistId;
-
                 // Update UI dynamically
                 document.querySelector(
                   `#song-${songId} .youtube-link a`
                 ).href = `https://www.youtube.com/watch?v=${youtubeVideoIdNew}&list=${playlistId}`;
+
+                showToast(`${data.success}`, 'success');
               }
             })
             .catch((err) => console.error(err));
         });
       });
 
-      document.addEventListener('DOMContentLoaded', function () {
-        var toastEl = document.querySelector('.toast');
-        var toast = new bootstrap.Toast(toastEl);
-        toast.show(); // Show the toast
-      });
-
       // Example using fetch to mark a song as reviewed
       document.querySelectorAll('.mark-reviewed-btn').forEach((button) => {
         button.addEventListener('click', function () {
           const songId = this.dataset.songId;
-          fetch(`/mark_reviewed?song_id=${songId}`, { method: 'GET' })
+          const songName = this.dataset.songName;
+          fetch(`/mark_reviewed?song_id=${songId}&song_name=${songName}`, {
+            method: 'GET',
+          })
             .then((response) => response.json())
             .then((data) => {
               if (data.success) {
-                // Remove the row or indicate that it's reviewed
                 const row = document.getElementById(`song-${songId}`);
-                row.style.opacity = 0.5; // or remove the row: row.remove();
+                row.remove();
+                showToast(`${data.success}`, 'success');
               }
             })
             .catch((err) => console.error(err));

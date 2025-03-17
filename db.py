@@ -136,9 +136,9 @@ def get_songs_for_review(connection, cursor):
 
 
 @with_db_connection
-def update_song_video(connection, cursor, youtube_video_id_old, youtube_video_id_new):
-    update_query = "UPDATE songs SET youtube_video_id = %s WHERE youtube_video_id = %s"
-    cursor.execute(update_query, (youtube_video_id_new, youtube_video_id_old))
+def update_song_video(connection, cursor, song_id, youtube_video_id_new):
+    update_query = "UPDATE songs SET youtube_video_id = %s WHERE id = %s"
+    cursor.execute(update_query, (youtube_video_id_new, song_id))
     connection.commit()
     return True
 
