@@ -263,6 +263,8 @@ def add_video_to_playlist(youtube, playlist_id, video_id):
                     if reason == "quotaExceeded":
                         error_message = "YouTube Data API Quota Limit Exceeded - Please Try Again Later"
                         return (False, {"error": "🚨 " + error_message})
+                    if reason == "failedPrecondition" or reason == "videoNotFound":
+                        return (True, "Video is unusual.")
 
             except Exception as ex:
                 return (
@@ -306,6 +308,8 @@ def add_to_playlist(
             db.update_total_song_number(total_count, playlist_id)
 
         for song_data in data_songs_from_list["items"]:
+            video_is_unusual = False
+
             song_id = song_data["song"]["id"]
             url_get_song_by_id = f"https://vocadb.net/api/songs/{song_id}"
             response = requests.get(
@@ -347,6 +351,9 @@ def add_to_playlist(
                 if not success:
                     yield (False, result)
                     return
+                elif result == "Video is unusual.":
+                    video_is_unusual = True
+                    review_status = False
 
             current_song_number = song_data["order"]
             db.update_current_song_number(current_song_number, playlist_id)
@@ -361,19 +368,22 @@ def add_to_playlist(
                 song_data["order"],
             )
 
-            if video_id_to_add:
+            if video_id_to_add and not video_is_unusual:
                 video_details = get_video_details(youtube, [video_id_to_add])
                 video_name = video_details[video_id_to_add]["video_name"]
 
-            message = (
-                {
-                    "message": f"✅ Successfully added: {video_name} to playlist. ({current_song_number}/{total_count})"
-                }
-                if video_id_to_add
-                else {
+            if not video_id_to_add:
+                message = {
                     "message": f"✅ No search results found for {data_songs_by_id["defaultName"]} - marked for review. ({current_song_number}/{total_count})"
                 }
-            )
+            elif video_is_unusual:
+                message = {
+                    "message": f"✅ Video found for {data_songs_by_id["defaultName"]} is unusual - marked for review. ({current_song_number}/{total_count})"
+                }
+            else:
+                message = {
+                    "message": f"✅ Successfully added: {video_name} to playlist. ({current_song_number}/{total_count})"
+                }
             yield (True, message)
 
         start += MAX_RESULTS
@@ -512,6 +522,9 @@ def stream_playlist():
 
 @app.route("/review")
 def review():
+    # youtube = get_youtube_service()
+    # if isinstance(youtube, Response):
+    #     return youtube
     songs = db.get_songs_for_review()
     return render_template("review.html", songs=songs)
 

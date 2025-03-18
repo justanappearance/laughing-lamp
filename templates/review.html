@@ -45,12 +45,6 @@
       </div>
     </nav>
     <div class="container my-5">
-      <div
-        id="success-message"
-        style="display: none; color: green; font-weight: bold"
-      >
-        Video successfully updated!
-      </div>
       <!-- Table of songs -->
       <table class="table table-striped">
         <thead>
@@ -210,10 +204,6 @@
             .then((data) => {
               if (data.success) {
                 const youtubeVideoIdNew = data.youtube_video_id_new;
-
-                const youtubeLinkTd = document.querySelector(
-                  `#song-${songId} .youtube-link`
-                );
                 const playlistId = youtubeLinkTd.dataset.playlistId;
                 // Update UI dynamically
                 document.querySelector(
