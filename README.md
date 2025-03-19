@@ -173,12 +173,12 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Acknowledgments
 
-YouTube Data API v3
-VocaDB
-Flask
-Bootstrap
-Other open source projects and resources used in this project.
-ChatGPT
+- YouTube Data API v3
+- VocaDB
+- Flask
+- Bootstrap
+- Other open source projects and resources used in this project.
+- ChatGPT
 
 ```
 
